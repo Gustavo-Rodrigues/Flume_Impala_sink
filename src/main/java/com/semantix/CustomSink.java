@@ -33,7 +33,8 @@ public class CustomSink extends AbstractSink implements Configurable {
             // Set JDBC Impala Driver
             Class.forName(JDBC_DRIVER_NAME);
             LOG.info("STARTING CONNECTION WITH IMPALA");
-            con = DriverManager.getConnection(connectionUrl);
+//            con = DriverManager.getConnection(connectionUrl);
+            con = DriverManager.getConnection("jdbc:impala://"+ip+":"+port);
         } catch (Exception e) {
             e.printStackTrace();
         }
