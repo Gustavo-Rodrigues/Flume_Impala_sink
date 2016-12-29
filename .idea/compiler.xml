@@ -10,7 +10,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="Flume_Impala_sink" target="1.5" />
+      <module name="Flume_Impala_sink" target="1.7" />
     </bytecodeTargetLevel>
   </component>
 </project>
