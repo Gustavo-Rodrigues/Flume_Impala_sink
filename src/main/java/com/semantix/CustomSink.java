@@ -7,24 +7,41 @@ import java.sql.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+    TODO
+    - Maybe will be necessary to create a class for kerberos and follow the
+    hdfs sink
+ */
+
 public class CustomSink extends AbstractSink implements Configurable {
+
     private static final Logger LOG = LoggerFactory.getLogger(CustomSink.class);
     private static final String JDBC_DRIVER_NAME = "com.cloudera.impala.jdbc4.Driver";
-    private static String connectionUrl = "jdbc:impala://localhost:21050";
+//    private static String connectionUrl = "jdbc:impala://localhost:21050";
     public Connection con = null;
     private String ip;
     private String port;
+    private String kerberosKeytab;
+    private String kerberosPrincipal;
 
     public void configure(Context context) {
         String ip = context.getString("ip","localhost");
         String port = context.getString("port","21050");
+        String kerberosKeytab = context.getString("kerberosKeytab");
+        String kerberosPrincipal = context.getString("kerberosPrincipal");
         LOG.info("IP: " + ip);
         LOG.info("PORT: " + port);
+        LOG.info("kerberosPrincipal: " + kerberosPrincipal);
+        LOG.info("kerberosKeytab: " + kerberosKeytab);
+
         this.ip = ip;
         this.port = port;
+        this.kerberosPrincipal = kerberosPrincipal;
+        this.kerberosKeytab = kerberosKeytab;
     }
 
     @Override
@@ -33,8 +50,15 @@ public class CustomSink extends AbstractSink implements Configurable {
             // Set JDBC Impala Driver
             Class.forName(JDBC_DRIVER_NAME);
             LOG.info("STARTING CONNECTION WITH IMPALA");
-//            con = DriverManager.getConnection(connectionUrl);
             con = DriverManager.getConnection("jdbc:impala://"+ip+":"+port);
+            //Kerberos
+            // Authenticating Kerberos principal
+            if(kerberosPrincipal != null){
+                LOG.info("Principal Authentication: ");
+//                final String user = "cloudera@CLOUDERA.COM";
+//                final String keyPath = "cloudera.keytab";
+                UserGroupInformation.loginUserFromKeytab(kerberosPrincipal, kerberosKeytab);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -53,9 +77,11 @@ public class CustomSink extends AbstractSink implements Configurable {
     }
 
     public Status process() throws EventDeliveryException {
+
         Status status = null;
         Channel ch = getChannel();
         Transaction txn = ch.getTransaction();
+
         try {
             txn.begin();
             Event event = ch.take();
@@ -74,10 +100,12 @@ public class CustomSink extends AbstractSink implements Configurable {
             String endts = fields[4];
             String urgency = "\"" +fields[5] + "\"";
 
-            LOG.info("STATEMENT: " +"INSERT INTO claro.slaview values ("+ alarme + "," + objeto + "," +
+            LOG.info("STATEMENT: " + "INSERT INTO claro.slaview values ("+ alarme + "," + objeto + "," +
                     status_content + "," + startts + "," + endts + "," + urgency + ")");
+
             stmt.execute("INSERT INTO claro.slaview values ("+ alarme + "," + objeto + "," + status_content
                     + "," + startts + "," + endts + "," + urgency + ");");
+
             txn.commit();
             status = Status.READY;
         } catch (Throwable t) {
