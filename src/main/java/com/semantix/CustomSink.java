@@ -99,9 +99,10 @@ public class CustomSink extends AbstractSink implements Configurable {
             //timestamp
             String endts = fields[4];
             String urgency = "\"" +fields[5] + "\"";
+            String mesAno = startts.substring(0,5);
 
             LOG.info("STATEMENT: " + "INSERT INTO claro.slaview values ("+ alarme + "," + objeto + "," +
-                    status_content + "," + startts + "," + endts + "," + urgency + ")");
+                    status_content + "," + startts + "," + endts + "," + urgency + "," + mesAno + ")");
 
             stmt.execute("INSERT INTO claro.slaview values ("+ alarme + "," + objeto + "," + status_content
                     + "," + startts + "," + endts + "," + urgency + ");");
